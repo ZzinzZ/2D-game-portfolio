@@ -3,12 +3,12 @@ export const ZONES = {
   about:    { x: 430, y: 300, width: 50, height: 128 },
   skills:   { x: 1000, y: 300, width: 280, height: 128 },
   projects: { x: 200, y: 750, width: 128, height: 128 },
-  contact:  { x: 1150, y: 750, width: 128, height: 128 },
+  contact:  { x: 1050, y: 750, width: 158, height: 128 },
 };
 export const ZONE_HINTS = {
   about: {
     type: "dialog",
-    text: "Hi! My name is Nguyễn Nhật Anh. I'm a passionate web developer who loves building creative and user-friendly websites. I enjoy solving problems, learning new technologies, and turning ideas into real digital experiences.",
+    text: "Hi! My name is Nguyen Nhat Anh. I'm a passionate web developer who loves building creative and user-friendly websites. I enjoy solving problems, learning new technologies, and turning ideas into real digital experiences.",
     avatar: "/assets/avatar.png",
   },
   skills: {
@@ -26,6 +26,11 @@ export const ZONE_HINTS = {
     text: "If you want to contact me, click on the big screen.",
     avatar: "/assets/avatar.png",
   },
+  helper: {
+    type:"dialog",
+    text: "Welcome to my digital world! 🎮 Use the arrow keys to move around. Walk into rooms to explore sections like Projects or Skills. Click on objects to learn more. Need help? Tap the '?' icon. Want some peace? Press 'M' or tap the 🔊 icon to mute the music.",
+    avatar: "/assets/avatar.png",
+  }
 };
 
 

@@ -10,7 +10,15 @@ export default class MainScene extends Phaser.Scene {
   preload() {
     this.load.tilemapTiledJSON("map", "/assets/new-map.json");
     this.load.image("tiles", "/assets/new-map.png");
+    this.load.audio("theme", "/assets/game-over.mp3");
+    this.load.image("helpIcon", "/assets/help-icon.png");
+    this.load.image("muteIcon", "/assets/mute.png");
+    this.load.image("soundIcon", "/assets/unmute.png");
 
+    this.load.spritesheet("run", "/character/run.png", {
+      frameWidth: 64,
+      frameHeight: 64,
+    });
     this.load.spritesheet("idle", "/character/idle.png", {
       frameWidth: 64,
       frameHeight: 64,
@@ -26,6 +34,87 @@ export default class MainScene extends Phaser.Scene {
     const map = this.make.tilemap({ key: "map" });
     const tileset = map.addTilesetImage("new-map", "tiles");
     const layer = map.createLayer("Tile Layer 1", tileset, 0, 0);
+    const music = this.sound.add("theme");
+
+    //Sound
+    music.play();
+    this.musicMuted = false;
+
+    // Tạo icon âm thanh (sử dụng image thay vì text)
+    this.soundIcon = this.add
+      .image(this.scale.width + 90, 490, "soundIcon")
+      .setScrollFactor(0)
+      .setOrigin(1, 0)
+      .setScale(0.1) // thu nhỏ cho phù hợp
+      .setInteractive({ useHandCursor: true });
+
+    this.soundIcon.on("pointerdown", () => {
+      this.toggleMusic(music);
+    });
+
+    // Cập nhật toggleMusic để thay đổi hình
+    this.toggleMusic = (music) => {
+      this.musicMuted = !this.musicMuted;
+      music.setMute(this.musicMuted);
+      this.soundIcon.setTexture(this.musicMuted ? "muteIcon" : "soundIcon");
+    };
+
+    // Phím tắt M để bật/tắt nhạc
+    this.input.keyboard.on("keydown-M", () => {
+      this.toggleMusic(music);
+    });
+    this.soundIcon.on("pointerover", () => {
+      this.tweens.add({
+        targets: this.soundIcon,
+        scale: 0.11,
+        duration: 100,
+      });
+    });
+
+    this.soundIcon.on("pointerout", () => {
+      this.tweens.add({
+        targets: this.soundIcon,
+        scale: 0.1,
+        duration: 100,
+      });
+    });
+
+    //Helper
+    const helpIcon = this.add
+      .image(this.scale.width + 90, this.scale.height - 250, "helpIcon")
+      .setOrigin(1, 1)
+      .setScale(0.1) // phóng to nếu cần
+      .setScrollFactor(0)
+      .setInteractive({ useHandCursor: true })
+      .setDepth(1000);
+
+    helpIcon.on("pointerover", () => {
+      this.tweens.add({
+        targets: helpIcon,
+        scale: 0.11,
+        duration: 150,
+        ease: "Power1",
+      });
+    });
+
+    helpIcon.on("pointerout", () => {
+      this.tweens.add({
+        targets: helpIcon,
+        scale: 0.1,
+        duration: 150,
+        ease: "Power1",
+      });
+    });
+
+    // Xử lý khi nhấn
+    helpIcon.on("pointerdown", () => {
+      if (window.openGuideModal) {
+        window.openGuideModal();
+      } else {
+        console.log("🟡 Hướng dẫn được gọi");
+      }
+    });
+
     layer.setCollisionByProperty({ collides: true });
 
     this.physics.world.setBounds(0, 0, map.widthInPixels, map.heightInPixels);
@@ -36,11 +125,11 @@ export default class MainScene extends Phaser.Scene {
       map.heightInPixels * 4
     );
     this.cameras.main.setZoom(0.84);
-    this.cameras.main.setDeadzone(1200, 100);
-    this.cameras.main.setBackgroundColor("#1a1a1a");
+    this.cameras.main.setDeadzone(1400, 100);
+    this.cameras.main.setBackgroundColor("#000000");
 
     const cam = this.cameras.main;
-    const centerX = cam.worldView.x + cam.width / cam.zoom / 2;
+    const centerX = cam.worldView.x + cam.width / cam.zoom / 2 - 100;
     const centerY = cam.worldView.y + cam.height / cam.zoom / 2;
 
     this.player = this.physics.add.sprite(centerX, centerY, "idle", 4);
@@ -90,12 +179,37 @@ export default class MainScene extends Phaser.Scene {
       frameRate: 8,
       repeat: -1,
     });
+    this.anims.create({
+      key: "run-up",
+      frames: this.anims.generateFrameNumbers("run", { start: 0, end: 7 }),
+      frameRate: 12,
+      repeat: -1,
+    });
+    this.anims.create({
+      key: "run-left",
+      frames: this.anims.generateFrameNumbers("run", { start: 8, end: 15 }),
+      frameRate: 12,
+      repeat: -1,
+    });
+    this.anims.create({
+      key: "run-down",
+      frames: this.anims.generateFrameNumbers("run", { start: 16, end: 23 }),
+      frameRate: 12,
+      repeat: -1,
+    });
+    this.anims.create({
+      key: "run-right",
+      frames: this.anims.generateFrameNumbers("run", { start: 24, end: 31 }),
+      frameRate: 12,
+      repeat: -1,
+    });
 
     this.cursors = this.input.keyboard.createCursorKeys();
 
     // ========== ZONES POPUP ==========
     this.popup = new Popup(this);
     this.zoneObjects = [];
+    this.activeZones = new Set();
 
     const graphics = this.add.graphics().lineStyle(2, 0xffff00);
 
@@ -106,12 +220,10 @@ export default class MainScene extends Phaser.Scene {
       zone.body.setImmovable(true);
       zone.triggered = false;
 
-      graphics.strokeRect(x, y, width, height);
+      // graphics.strokeRect(x, y, width, height);
       this.zoneObjects.push({ key, zone });
 
-      // ✅ Overlap check (1 lần)
       this.physics.add.overlap(this.player, zone, () => {
-        console.log("check 1",zone.triggered)
         if (!zone.triggered) {
           zone.triggered = true;
           const hint = ZONE_HINTS[key];
@@ -119,52 +231,79 @@ export default class MainScene extends Phaser.Scene {
             text: hint.text,
             avatar: hint.avatar,
           });
-        console.log("check 2",zone.triggered)
-
         }
+        this.activeZones.add(key);
       });
     });
 
     // ========== INTERACTIVE ZONES ==========
-    const interactiveZones = [
-      {
-        x: 200,
-        y: 589,
-        width: 220,
-        height: 80,
+    this.interactiveZoneConfig = {
+      projects: {
+        x: 150,
+        y: 570,
+        width: 270,
+        height: 100,
         onClick: window.openProjectModal,
       },
-      {
-        x: 1090,
-        y: 589,
+      contact: {
+        x: 1070,
+        y: 570,
         width: 230,
         height: 120,
         onClick: window.openContactModal,
       },
-      {
-        x: 1090,
+      skills: {
+        x: 950,
         y: 100,
-        width: 220,
-        height: 100,
+        width: 350,
+        height: 140,
         onClick: window.openSkillsModal,
       },
-    ];
+    };
 
-    interactiveZones.forEach(({ x, y, width, height, onClick }) => {
+    this.interactiveZones = {};
+    Object.entries(this.interactiveZoneConfig).forEach(([zoneKey, config]) => {
       const zone = this.add
-        .zone(x, y, width, height)
+        .zone(config.x, config.y, config.width, config.height)
         .setOrigin(0)
-        .setInteractive();
-      this.input.enableDebug(zone);
-      zone.on("pointerdown", () => onClick?.());
+        .setInteractive({ useHandCursor: true });
+
+      // Disable interaction initially
+      zone.disableInteractive();
+      zone.setAlpha(0.3);
+
+      // Enable debug outline
+      // this.input.enableDebug(zone);
+
+      zone.on("pointerdown", () => {
+        if (zone.input.enabled) {
+          config.onClick?.();
+        }
+      });
+
+      // Add hover effects when enabled
+      zone.on("pointerover", () => {
+        if (zone.input.enabled) {
+          zone.setAlpha(0.8);
+        }
+      });
+
+      zone.on("pointerout", () => {
+        if (zone.input.enabled) {
+          zone.setAlpha(0.6);
+        }
+      });
+
+      this.interactiveZones[zoneKey] = zone;
     });
+
+    this.shiftKey = this.input.keyboard.addKey("SHIFT");
   }
 
   update() {
-    const speed = 130;
     let direction = "";
-    const playerBounds = this.player.getBounds();
-
+    const isRunning = this.shiftKey.isDown;
+    let speed = isRunning ? 250 : 130;
     this.player.setVelocity(0);
 
     if (this.cursors.left.isDown) {
@@ -184,12 +323,66 @@ export default class MainScene extends Phaser.Scene {
     }
 
     if (direction) {
-      this.player.anims.play(`walk-${direction}`, true);
+      const animKey = `${isRunning ? "run" : "walk"}-${direction}`;
+      this.player.anims.play(animKey, true);
       this.player.lastDirection = direction;
     } else {
       this.player.anims.play(`idle-${this.player.lastDirection}`, true);
     }
 
-    // Check zone popups
+    // Check which zones the player is currently in
+    this.checkZoneOverlaps();
+  }
+
+  checkZoneOverlaps() {
+    const currentActiveZones = new Set();
+
+    // Check each zone to see if player is overlapping
+    this.zoneObjects.forEach(({ key, zone }) => {
+      const playerBounds = this.player.getBounds();
+      const zoneBounds = new Phaser.Geom.Rectangle(
+        zone.x,
+        zone.y,
+        zone.width,
+        zone.height
+      );
+
+      if (Phaser.Geom.Rectangle.Overlaps(playerBounds, zoneBounds)) {
+        currentActiveZones.add(key);
+      }
+    });
+
+    // Enable/disable interactive zones based on player position
+    Object.keys(this.interactiveZones).forEach((zoneKey) => {
+      const interactiveZone = this.interactiveZones[zoneKey];
+
+      if (currentActiveZones.has(zoneKey)) {
+        // Player is in this zone - enable interaction
+        if (!interactiveZone.input.enabled) {
+          interactiveZone.setInteractive({ useHandCursor: true });
+          interactiveZone.setAlpha(0.6);
+
+          this.tweens.add({
+            targets: interactiveZone,
+            alpha: 0.8,
+            duration: 300,
+            yoyo: true,
+            repeat: -1,
+          });
+        }
+      } else {
+        // Player is not in this zone - disable interaction
+        if (interactiveZone.input.enabled) {
+          interactiveZone.disableInteractive();
+          interactiveZone.setAlpha(0.3);
+
+          // Stop any existing tweens
+          this.tweens.killTweensOf(interactiveZone);
+        }
+      }
+    });
+
+    // Update active zones
+    this.activeZones = currentActiveZones;
   }
 }

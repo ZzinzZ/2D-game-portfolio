@@ -26,7 +26,12 @@ const GameCanvas = () => {
     }
   }, []);
 
-  return <div id="game-container" />;
+  return (
+    
+    <>
+    <div id="game-container" />
+    </>
+  );
 };
 
 export default GameCanvas;
