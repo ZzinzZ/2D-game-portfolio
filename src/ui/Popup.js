@@ -22,13 +22,13 @@ export default class Popup {
     // Nền hộp thoại
     const bg = this.scene.add.rectangle(x, y - 70, estimatedWidth, estimatedHeight, 0x000000, 0.9);
     bg.setOrigin(0.5);
-    bg.setStrokeStyle(2, 0xffffff); // viền trắng rõ nét
+    bg.setStrokeStyle(2, 0xffffff); 
 
     // Text rõ ràng và to hơn
     const text = this.scene.add.text(x, y - 70, message, {
       fontFamily: "monospace",
-      fontSize: "16px",               // TĂNG cỡ chữ
-      color: "#ffffff",               // Màu trắng rõ nét
+      fontSize: "16px",              
+      color: "#ffffff",
       align: "center",
       wordWrap: { width: estimatedWidth - 20 },
     }).setOrigin(0.5);

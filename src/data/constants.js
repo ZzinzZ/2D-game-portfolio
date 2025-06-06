@@ -1,9 +1,8 @@
-
 export const ZONES = {
-  about:    { x: 430, y: 300, width: 50, height: 128 },
-  skills:   { x: 1000, y: 300, width: 280, height: 128 },
+  about: { x: 430, y: 300, width: 50, height: 128 },
+  skills: { x: 1000, y: 300, width: 280, height: 128 },
   projects: { x: 200, y: 750, width: 128, height: 128 },
-  contact:  { x: 1050, y: 750, width: 158, height: 128 },
+  contact: { x: 1050, y: 750, width: 158, height: 128 },
 };
 export const ZONE_HINTS = {
   about: {
@@ -27,12 +26,11 @@ export const ZONE_HINTS = {
     avatar: "/assets/avatar.png",
   },
   helper: {
-    type:"dialog",
-    text: "Welcome to my digital world! 🎮 Use the arrow keys to move around. Walk into rooms to explore sections like Projects or Skills. Click on objects to learn more. Need help? Tap the '?' icon. Want some peace? Press 'M' or tap the 🔊 icon to mute the music.",
+    type: "dialog",
+    text: "Welcome to my digital world! 🎮 Use the arrow keys to move around.Press 'Shift' to run. Walk into rooms to explore sections. Click on objects to learn more. Need help? Tap the '?' icon. Want some peace? Press 'M' or tap the 🔊 icon to mute the music.",
     avatar: "/assets/avatar.png",
-  }
+  },
 };
-
 
 export const PLAYER_SPEED = 130;
 export const PLAYER_SCALE = 2.3;

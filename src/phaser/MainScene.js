@@ -262,15 +262,23 @@ export default class MainScene extends Phaser.Scene {
     };
 
     this.interactiveZones = {};
+    this.zoneAuras = {}; // Lưu trữ các aura graphics
+
     Object.entries(this.interactiveZoneConfig).forEach(([zoneKey, config]) => {
       const zone = this.add
         .zone(config.x, config.y, config.width, config.height)
         .setOrigin(0)
         .setInteractive({ useHandCursor: true });
 
+      // Tạo aura graphics cho zone
+      const auraGraphics = this.add.graphics();
+      this.createZoneAura(auraGraphics, config);
+      auraGraphics.setVisible(false); // Ẩn ban đầu
+      this.zoneAuras[zoneKey] = auraGraphics;
+
       // Disable interaction initially
       zone.disableInteractive();
-      zone.setAlpha(0.3);
+      zone.setAlpha(0);
 
       // Enable debug outline
       // this.input.enableDebug(zone);
@@ -284,13 +292,29 @@ export default class MainScene extends Phaser.Scene {
       // Add hover effects when enabled
       zone.on("pointerover", () => {
         if (zone.input.enabled) {
-          zone.setAlpha(0.8);
+          // Tăng cường hiệu ứng khi hover
+          this.tweens.killTweensOf(this.zoneAuras[zoneKey]);
+          this.tweens.add({
+            targets: this.zoneAuras[zoneKey],
+            alpha: 0.8,
+            duration: 200,
+            yoyo: true,
+            repeat: -1,
+          });
         }
       });
 
       zone.on("pointerout", () => {
         if (zone.input.enabled) {
-          zone.setAlpha(0.6);
+          // Trở lại hiệu ứng bình thường
+          this.tweens.killTweensOf(this.zoneAuras[zoneKey]);
+          this.tweens.add({
+            targets: this.zoneAuras[zoneKey],
+            alpha: 0.4,
+            duration: 800,
+            yoyo: true,
+            repeat: -1,
+          });
         }
       });
 
@@ -298,6 +322,42 @@ export default class MainScene extends Phaser.Scene {
     });
 
     this.shiftKey = this.input.keyboard.addKey("SHIFT");
+  }
+
+  // Tạo hiệu ứng aura xanh cho zone
+  createZoneAura(graphics, config) {
+    graphics.clear();
+    
+    // Tạo gradient effect bằng cách vẽ nhiều layer
+    const layers = [
+      { color: 0x00ffff, alpha: 0.1, offset: 20 }, // Cyan ngoài cùng
+      { color: 0x0099ff, alpha: 0.15, offset: 15 }, // Blue
+      { color: 0x0066ff, alpha: 0.2, offset: 10 }, // Deeper blue
+      { color: 0x0033ff, alpha: 0.25, offset: 5 }, // Inner blue
+    ];
+
+    layers.forEach(layer => {
+      graphics.lineStyle(3, layer.color, layer.alpha);
+      graphics.fillStyle(layer.color, layer.alpha * 0.3);
+      graphics.fillRoundedRect(
+        config.x - layer.offset, 
+        config.y - layer.offset, 
+        config.width + layer.offset * 2, 
+        config.height + layer.offset * 2,
+        8
+      );
+      graphics.strokeRoundedRect(
+        config.x - layer.offset, 
+        config.y - layer.offset, 
+        config.width + layer.offset * 2, 
+        config.height + layer.offset * 2,
+        8
+      );
+    });
+
+    // Thêm inner glow
+    graphics.lineStyle(2, 0x66ccff, 0.6);
+    graphics.strokeRoundedRect(config.x + 5, config.y + 5, config.width - 10, config.height - 10, 5);
   }
 
   update() {
@@ -355,29 +415,47 @@ export default class MainScene extends Phaser.Scene {
     // Enable/disable interactive zones based on player position
     Object.keys(this.interactiveZones).forEach((zoneKey) => {
       const interactiveZone = this.interactiveZones[zoneKey];
+      const auraGraphics = this.zoneAuras[zoneKey];
 
       if (currentActiveZones.has(zoneKey)) {
-        // Player is in this zone - enable interaction
+        // Player is in this zone - enable interaction and show aura
         if (!interactiveZone.input.enabled) {
           interactiveZone.setInteractive({ useHandCursor: true });
-          interactiveZone.setAlpha(0.6);
+          interactiveZone.setAlpha(1);
 
+          // Hiển thị và animate aura
+          auraGraphics.setVisible(true);
           this.tweens.add({
-            targets: interactiveZone,
-            alpha: 0.8,
-            duration: 300,
+            targets: auraGraphics,
+            alpha: 0.4,
+            duration: 800,
             yoyo: true,
             repeat: -1,
+            ease: 'Sine.easeInOut'
+          });
+
+          // Thêm hiệu ứng scale nhẹ cho aura
+          this.tweens.add({
+            targets: auraGraphics,
+            scaleX: 1.02,
+            scaleY: 1.02,
+            duration: 1200,
+            yoyo: true,
+            repeat: -1,
+            ease: 'Sine.easeInOut'
           });
         }
       } else {
-        // Player is not in this zone - disable interaction
+        // Player is not in this zone - disable interaction and hide aura
         if (interactiveZone.input.enabled) {
           interactiveZone.disableInteractive();
-          interactiveZone.setAlpha(0.3);
+          interactiveZone.setAlpha(0);
 
-          // Stop any existing tweens
-          this.tweens.killTweensOf(interactiveZone);
+          // Ẩn aura và dừng tất cả animation
+          auraGraphics.setVisible(false);
+          this.tweens.killTweensOf(auraGraphics);
+          auraGraphics.setAlpha(1);
+          auraGraphics.setScale(1);
         }
       }
     });
