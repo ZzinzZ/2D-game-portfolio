@@ -10,7 +10,7 @@ const GameCanvas = () => {
       const config = {
         type: Phaser.AUTO,
         width: window.innerWidth, 
-        height:850,
+        height:window.innerHeight,
         parent: "game-container",
         physics: {
           default: "arcade",

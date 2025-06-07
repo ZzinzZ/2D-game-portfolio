@@ -36,11 +36,14 @@ export default class MainScene extends Phaser.Scene {
     const layer = map.createLayer("Tile Layer 1", tileset, 0, 0);
     const music = this.sound.add("theme");
 
+    // Calculate responsive zoom only
+    this.calculateResponsiveZoom();
+
     //Sound
     music.play();
     this.musicMuted = false;
 
-    // Tạo icon âm thanh (sử dụng image thay vì text)
+    // Tạo icon âm thanh (giữ nguyên vị trí cũ)
     this.soundIcon = this.add
       .image(this.scale.width + 90, 490, "soundIcon")
       .setScrollFactor(0)
@@ -63,6 +66,7 @@ export default class MainScene extends Phaser.Scene {
     this.input.keyboard.on("keydown-M", () => {
       this.toggleMusic(music);
     });
+
     this.soundIcon.on("pointerover", () => {
       this.tweens.add({
         targets: this.soundIcon,
@@ -79,9 +83,8 @@ export default class MainScene extends Phaser.Scene {
       });
     });
 
-    //Helper
     const helpIcon = this.add
-      .image(this.scale.width + 90, this.scale.height - 250, "helpIcon")
+      .image(this.scale.width + 90, this.scale.height + 20, "helpIcon")
       .setOrigin(1, 1)
       .setScale(0.1) // phóng to nếu cần
       .setScrollFactor(0)
@@ -106,7 +109,6 @@ export default class MainScene extends Phaser.Scene {
       });
     });
 
-    // Xử lý khi nhấn
     helpIcon.on("pointerdown", () => {
       if (window.openGuideModal) {
         window.openGuideModal();
@@ -124,7 +126,8 @@ export default class MainScene extends Phaser.Scene {
       map.widthInPixels * 4,
       map.heightInPixels * 4
     );
-    this.cameras.main.setZoom(0.84);
+    // Sử dụng responsive zoom
+    this.cameras.main.setZoom(this.adaptiveZoom);
     this.cameras.main.setDeadzone(1400, 100);
     this.cameras.main.setBackgroundColor("#000000");
 
@@ -141,7 +144,7 @@ export default class MainScene extends Phaser.Scene {
     this.physics.add.collider(this.player, layer);
     this.cameras.main.startFollow(this.player, true, 0.1, 0.1);
 
-    // Animations
+    // Animations (unchanged)
     const directions = ["up", "left", "down", "right"];
     directions.forEach((dir, i) => {
       this.anims.create({
@@ -220,7 +223,6 @@ export default class MainScene extends Phaser.Scene {
       zone.body.setImmovable(true);
       zone.triggered = false;
 
-      // graphics.strokeRect(x, y, width, height);
       this.zoneObjects.push({ key, zone });
 
       this.physics.add.overlap(this.player, zone, () => {
@@ -262,7 +264,7 @@ export default class MainScene extends Phaser.Scene {
     };
 
     this.interactiveZones = {};
-    this.zoneAuras = {}; // Lưu trữ các aura graphics
+    this.zoneAuras = {};
 
     Object.entries(this.interactiveZoneConfig).forEach(([zoneKey, config]) => {
       const zone = this.add
@@ -324,7 +326,26 @@ export default class MainScene extends Phaser.Scene {
     this.shiftKey = this.input.keyboard.addKey("SHIFT");
   }
 
-  // Tạo hiệu ứng aura xanh cho zone
+  calculateResponsiveZoom() {
+  const screenWidth = window.innerWidth;
+
+  // Lấy tilemap
+  const map = this.cache.tilemap.get("map").data;
+  const tileWidth = map.tilewidth;
+  const mapWidthInTiles = map.width;
+
+  // Tính kích thước map theo pixel
+  const mapWidthInPixels = mapWidthInTiles * tileWidth;
+
+  // Tính zoom để chiều ngang map = chiều ngang màn hình
+  const zoom = screenWidth / mapWidthInPixels;
+
+  // Giới hạn zoom trong khoảng hợp lý
+  this.adaptiveZoom = Phaser.Math.Clamp(zoom, 0.5, 2);
+
+  console.log(`Zoom fit width: ${this.adaptiveZoom.toFixed(2)}, Screen width: ${screenWidth}, Map width: ${mapWidthInPixels}`);
+}
+  // Tạo hiệu ứng aura xanh cho zone (giữ nguyên)
   createZoneAura(graphics, config) {
     graphics.clear();
     
@@ -363,7 +384,7 @@ export default class MainScene extends Phaser.Scene {
   update() {
     let direction = "";
     const isRunning = this.shiftKey.isDown;
-    let speed = isRunning ? 250 : 130;
+    let speed = (isRunning ? 250 : 130);
     this.player.setVelocity(0);
 
     if (this.cursors.left.isDown) {
@@ -390,14 +411,12 @@ export default class MainScene extends Phaser.Scene {
       this.player.anims.play(`idle-${this.player.lastDirection}`, true);
     }
 
-    // Check which zones the player is currently in
     this.checkZoneOverlaps();
   }
 
   checkZoneOverlaps() {
     const currentActiveZones = new Set();
 
-    // Check each zone to see if player is overlapping
     this.zoneObjects.forEach(({ key, zone }) => {
       const playerBounds = this.player.getBounds();
       const zoneBounds = new Phaser.Geom.Rectangle(
@@ -412,18 +431,15 @@ export default class MainScene extends Phaser.Scene {
       }
     });
 
-    // Enable/disable interactive zones based on player position
     Object.keys(this.interactiveZones).forEach((zoneKey) => {
       const interactiveZone = this.interactiveZones[zoneKey];
       const auraGraphics = this.zoneAuras[zoneKey];
 
       if (currentActiveZones.has(zoneKey)) {
-        // Player is in this zone - enable interaction and show aura
         if (!interactiveZone.input.enabled) {
           interactiveZone.setInteractive({ useHandCursor: true });
           interactiveZone.setAlpha(1);
 
-          // Hiển thị và animate aura
           auraGraphics.setVisible(true);
           this.tweens.add({
             targets: auraGraphics,
@@ -434,7 +450,6 @@ export default class MainScene extends Phaser.Scene {
             ease: 'Sine.easeInOut'
           });
 
-          // Thêm hiệu ứng scale nhẹ cho aura
           this.tweens.add({
             targets: auraGraphics,
             scaleX: 1.02,
@@ -446,12 +461,10 @@ export default class MainScene extends Phaser.Scene {
           });
         }
       } else {
-        // Player is not in this zone - disable interaction and hide aura
         if (interactiveZone.input.enabled) {
           interactiveZone.disableInteractive();
           interactiveZone.setAlpha(0);
 
-          // Ẩn aura và dừng tất cả animation
           auraGraphics.setVisible(false);
           this.tweens.killTweensOf(auraGraphics);
           auraGraphics.setAlpha(1);
@@ -460,7 +473,6 @@ export default class MainScene extends Phaser.Scene {
       }
     });
 
-    // Update active zones
     this.activeZones = currentActiveZones;
   }
 }

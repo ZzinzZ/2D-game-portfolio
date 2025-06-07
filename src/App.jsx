@@ -19,16 +19,15 @@ function App() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-  const timer = setTimeout(() => {
-    setLoading(false);
-    setDialogData(HELPER_DIALOG); // 👈 Show helper dialog after loading
-  }, 3000);
-  return () => clearTimeout(timer);
-}, []);
+    const timer = setTimeout(() => {
+      setLoading(false);
+      setDialogData(HELPER_DIALOG);
+    }, 3000);
+    return () => clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     window.openGuideModal = () => setDialogData(HELPER_DIALOG);
-    // Cho phép gọi từ Phaser
     window.openProjectModal = () => {
       setShowModalProject(true);
       setDialogData(null);
@@ -55,6 +54,28 @@ function App() {
     };
     window.openDialogBox = (data) => setDialogData(data);
     window.closeDialogBox = () => setDialogData(null);
+  }, []);
+
+  useEffect(() => {
+    const handleKeydown = (e) => {
+      if ((e.ctrlKey || e.metaKey) && (e.key === '+' || e.key === '-' || e.key === '=' || e.key === '0')) {
+        e.preventDefault();
+      }
+    };
+
+    const handleWheel = (e) => {
+      if (e.ctrlKey) {
+        e.preventDefault();
+      }
+    };
+
+    document.addEventListener("keydown", handleKeydown);
+    document.addEventListener("wheel", handleWheel, { passive: false });
+
+    return () => {
+      document.removeEventListener("keydown", handleKeydown);
+      document.removeEventListener("wheel", handleWheel);
+    };
   }, []);
 
   const closeDialog = () => {
