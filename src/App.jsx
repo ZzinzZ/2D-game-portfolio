@@ -8,7 +8,7 @@ import LoadingScreen from "./components/LoadingScreen";
 import HelpModal from "./components/HelpModal";
 
 const HELPER_DIALOG = {
-  text: "Welcome to my digital world! 🎮 Use the arrow keys to move around. Press 'Shift' to run. Walk into rooms to explore sections like Projects or Skills. Click on objects to learn more. Need help? Tap the '?' icon. Want some peace? Press 'M' or tap the 🔊 icon to mute the music.",
+  text: "Welcome to my digital world! 🎮 Use the arrow keys to move around. Press 'Shift' to run. Walk into rooms to explore sections like Projects or Skills. Click on objects to learn more. Need help? click on the player. Want some peace? Press 'M' to mute the music.",
   avatar: "/assets/avatar.png",
 };
 
