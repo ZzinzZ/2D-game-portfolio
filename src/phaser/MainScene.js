@@ -11,9 +11,6 @@ export default class MainScene extends Phaser.Scene {
     this.load.tilemapTiledJSON("map", "/assets/new-map.json");
     this.load.image("tiles", "/assets/new-map.png");
     this.load.audio("theme", "/assets/game-over.mp3");
-    this.load.image("helpIcon", "/assets/help-icon.png");
-    this.load.image("muteIcon", "/assets/mute.png");
-    this.load.image("soundIcon", "/assets/unmute.png");
 
     this.load.spritesheet("run", "/character/run.png", {
       frameWidth: 64,
@@ -43,80 +40,6 @@ export default class MainScene extends Phaser.Scene {
     music.play();
     this.musicMuted = false;
 
-    // Tạo icon âm thanh (giữ nguyên vị trí cũ)
-    this.soundIcon = this.add
-      .image(this.scale.width + 90, 490, "soundIcon")
-      .setScrollFactor(0)
-      .setOrigin(1, 0)
-      .setScale(0.1) // thu nhỏ cho phù hợp
-      .setInteractive({ useHandCursor: true });
-
-    this.soundIcon.on("pointerdown", () => {
-      this.toggleMusic(music);
-    });
-
-    // Cập nhật toggleMusic để thay đổi hình
-    this.toggleMusic = (music) => {
-      this.musicMuted = !this.musicMuted;
-      music.setMute(this.musicMuted);
-      this.soundIcon.setTexture(this.musicMuted ? "muteIcon" : "soundIcon");
-    };
-
-    // Phím tắt M để bật/tắt nhạc
-    this.input.keyboard.on("keydown-M", () => {
-      this.toggleMusic(music);
-    });
-
-    this.soundIcon.on("pointerover", () => {
-      this.tweens.add({
-        targets: this.soundIcon,
-        scale: 0.11,
-        duration: 100,
-      });
-    });
-
-    this.soundIcon.on("pointerout", () => {
-      this.tweens.add({
-        targets: this.soundIcon,
-        scale: 0.1,
-        duration: 100,
-      });
-    });
-
-    const helpIcon = this.add
-      .image(this.scale.width + 90, this.scale.height + 20, "helpIcon")
-      .setOrigin(1, 1)
-      .setScale(0.1) // phóng to nếu cần
-      .setScrollFactor(0)
-      .setInteractive({ useHandCursor: true })
-      .setDepth(1000);
-
-    helpIcon.on("pointerover", () => {
-      this.tweens.add({
-        targets: helpIcon,
-        scale: 0.11,
-        duration: 150,
-        ease: "Power1",
-      });
-    });
-
-    helpIcon.on("pointerout", () => {
-      this.tweens.add({
-        targets: helpIcon,
-        scale: 0.1,
-        duration: 150,
-        ease: "Power1",
-      });
-    });
-
-    helpIcon.on("pointerdown", () => {
-      if (window.openGuideModal) {
-        window.openGuideModal();
-      } else {
-        console.log("🟡 Hướng dẫn được gọi");
-      }
-    });
-
     layer.setCollisionByProperty({ collides: true });
 
     this.physics.world.setBounds(0, 0, map.widthInPixels, map.heightInPixels);
@@ -141,8 +64,48 @@ export default class MainScene extends Phaser.Scene {
     this.player.lastDirection = "down";
     this.player.anims.play("idle-down");
 
+    // Make player interactive (clickable)
+    this.player.setInteractive({ useHandCursor: true });
+    
+    // Add click event to player to open help modal
+    this.player.on('pointerdown', () => {
+      if (window.openHelpModal) {
+        window.openHelpModal();
+      } else {
+        console.log("🟡 Help modal được gọi - click vào player");
+      }
+    });
+
+    // Add hover effect for player
+    this.player.on('pointerover', () => {
+      // Tạo hiệu ứng glow khi hover
+      this.tweens.add({
+        targets: this.player,
+        scaleX: 2.4,
+        scaleY: 2.4,
+        duration: 200,
+        ease: 'Power1'
+      });
+    });
+
+    this.player.on('pointerout', () => {
+      // Trở lại kích thước ban đầu
+      this.tweens.add({
+        targets: this.player,
+        scaleX: 2.3,
+        scaleY: 2.3,
+        duration: 200,
+        ease: 'Power1'
+      });
+    });
+
     this.physics.add.collider(this.player, layer);
     this.cameras.main.startFollow(this.player, true, 0.1, 0.1);
+
+    // Setup music toggle with M key
+    this.input.keyboard.on("keydown-M", () => {
+      this.toggleMusic(music);
+    });
 
     // Animations (unchanged)
     const directions = ["up", "left", "down", "right"];
@@ -282,9 +245,6 @@ export default class MainScene extends Phaser.Scene {
       zone.disableInteractive();
       zone.setAlpha(0);
 
-      // Enable debug outline
-      // this.input.enableDebug(zone);
-
       zone.on("pointerdown", () => {
         if (zone.input.enabled) {
           config.onClick?.();
@@ -326,29 +286,41 @@ export default class MainScene extends Phaser.Scene {
     this.shiftKey = this.input.keyboard.addKey("SHIFT");
   }
 
+  // Music toggle function
+  toggleMusic(music) {
+    this.musicMuted = !this.musicMuted;
+    music.setMute(this.musicMuted);
+    console.log(`🎵 Music ${this.musicMuted ? 'muted' : 'unmuted'}`);
+  }
+
   calculateResponsiveZoom() {
-  const screenWidth = window.innerWidth;
+    const screenWidth = window.innerWidth;
 
-  // Lấy tilemap
-  const map = this.cache.tilemap.get("map").data;
-  const tileWidth = map.tilewidth;
-  const mapWidthInTiles = map.width;
+    // Lấy tilemap
+    const map = this.cache.tilemap.get("map").data;
+    const tileWidth = map.tilewidth;
+    const mapWidthInTiles = map.width;
 
-  // Tính kích thước map theo pixel
-  const mapWidthInPixels = mapWidthInTiles * tileWidth;
+    // Tính kích thước map theo pixel
+    const mapWidthInPixels = mapWidthInTiles * tileWidth;
 
-  // Tính zoom để chiều ngang map = chiều ngang màn hình
-  const zoom = screenWidth / mapWidthInPixels;
+    // Tính zoom để chiều ngang map = chiều ngang màn hình
+    const zoom = screenWidth / mapWidthInPixels;
 
-  // Giới hạn zoom trong khoảng hợp lý
-  this.adaptiveZoom = Phaser.Math.Clamp(zoom, 0.5, 2);
+    // Giới hạn zoom trong khoảng hợp lý
+    this.adaptiveZoom = Phaser.Math.Clamp(zoom, 0.5, 2);
 
-  console.log(`Zoom fit width: ${this.adaptiveZoom.toFixed(2)}, Screen width: ${screenWidth}, Map width: ${mapWidthInPixels}`);
-}
+    console.log(
+      `Zoom fit width: ${this.adaptiveZoom.toFixed(
+        2
+      )}, Screen width: ${screenWidth}, Map width: ${mapWidthInPixels}`
+    );
+  }
+
   // Tạo hiệu ứng aura xanh cho zone (giữ nguyên)
   createZoneAura(graphics, config) {
     graphics.clear();
-    
+
     // Tạo gradient effect bằng cách vẽ nhiều layer
     const layers = [
       { color: 0x00ffff, alpha: 0.1, offset: 20 }, // Cyan ngoài cùng
@@ -357,20 +329,20 @@ export default class MainScene extends Phaser.Scene {
       { color: 0x0033ff, alpha: 0.25, offset: 5 }, // Inner blue
     ];
 
-    layers.forEach(layer => {
+    layers.forEach((layer) => {
       graphics.lineStyle(3, layer.color, layer.alpha);
       graphics.fillStyle(layer.color, layer.alpha * 0.3);
       graphics.fillRoundedRect(
-        config.x - layer.offset, 
-        config.y - layer.offset, 
-        config.width + layer.offset * 2, 
+        config.x - layer.offset,
+        config.y - layer.offset,
+        config.width + layer.offset * 2,
         config.height + layer.offset * 2,
         8
       );
       graphics.strokeRoundedRect(
-        config.x - layer.offset, 
-        config.y - layer.offset, 
-        config.width + layer.offset * 2, 
+        config.x - layer.offset,
+        config.y - layer.offset,
+        config.width + layer.offset * 2,
         config.height + layer.offset * 2,
         8
       );
@@ -378,13 +350,19 @@ export default class MainScene extends Phaser.Scene {
 
     // Thêm inner glow
     graphics.lineStyle(2, 0x66ccff, 0.6);
-    graphics.strokeRoundedRect(config.x + 5, config.y + 5, config.width - 10, config.height - 10, 5);
+    graphics.strokeRoundedRect(
+      config.x + 5,
+      config.y + 5,
+      config.width - 10,
+      config.height - 10,
+      5
+    );
   }
 
   update() {
     let direction = "";
     const isRunning = this.shiftKey.isDown;
-    let speed = (isRunning ? 250 : 130);
+    let speed = isRunning ? 250 : 130;
     this.player.setVelocity(0);
 
     if (this.cursors.left.isDown) {
@@ -447,7 +425,7 @@ export default class MainScene extends Phaser.Scene {
             duration: 800,
             yoyo: true,
             repeat: -1,
-            ease: 'Sine.easeInOut'
+            ease: "Sine.easeInOut",
           });
 
           this.tweens.add({
@@ -457,7 +435,7 @@ export default class MainScene extends Phaser.Scene {
             duration: 1200,
             yoyo: true,
             repeat: -1,
-            ease: 'Sine.easeInOut'
+            ease: "Sine.easeInOut",
           });
         }
       } else {
@@ -474,5 +452,10 @@ export default class MainScene extends Phaser.Scene {
     });
 
     this.activeZones = currentActiveZones;
+  }
+
+  // Cleanup khi destroy scene
+  destroy() {
+    super.destroy();
   }
 }
