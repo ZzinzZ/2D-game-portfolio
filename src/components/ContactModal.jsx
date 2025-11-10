@@ -9,7 +9,9 @@ const ContactModal = ({ isOpen, onClose }) => {
         <img src="/assets/avatar.jpg" className="contact-avatar" />
         <div className="contact-info">
           <h2 className="contact-name">Nguyen Nhat Anh</h2>
-          <span className="job-title">Web developer</span>
+          <span className="job-title">
+            Web developer
+            </span>
           <div className="social-container">
             <Social />
           </div>
